@@ -50,6 +50,34 @@
             flex-wrap: wrap;
         }
 
+        .zoom-control {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px 30px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: #333;
+        }
+
+        .zoom-control label {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .zoom-control input[type="range"] {
+            width: 200px;
+            height: 8px;
+            cursor: pointer;
+        }
+
+        .zoom-value {
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #667eea;
+            min-width: 60px;
+        }
+
         .btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -258,7 +286,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>🎙️ Analog vs Digital Signal Comparison</h1>
+            <h1>wisdom campus<br>Analog vs Digital Signal Comparison</h1>
             <p class="subtitle">Record sound, play it back slowly, and see the difference!</p>
         </header>
 
@@ -280,8 +308,14 @@
         <div class="controls">
             <div class="speed-control">
                 <label for="speedSlider">⏱️ Playback Speed:</label>
-                <input type="range" id="speedSlider" min="10" max="100" value="100" step="10">
+                <input type="range" id="speedSlider" min="5" max="100" value="100" step="5">
                 <span class="speed-value" id="speedValue">100%</span>
+            </div>
+            
+            <div class="zoom-control">
+                <label for="zoomSlider">🔍 Zoom Level:</label>
+                <input type="range" id="zoomSlider" min="1" max="10" value="1" step="1">
+                <span class="zoom-value" id="zoomValue">1x</span>
             </div>
         </div>
 
@@ -351,10 +385,13 @@
         let recordedBuffer;
         let isRecording = false;
         let isPlaying = false;
+        let isPaused = false;
         let playbackSpeed = 1.0;
+        let zoomLevel = 1;
         let animationId;
         let playbackPosition = 0;
         let audioSource;
+        let pausedDataArray = null;
 
         const analogCanvas = document.getElementById('analogCanvas');
         const digitalCanvas = document.getElementById('digitalCanvas');
@@ -383,11 +420,28 @@
             }
         });
 
+        const zoomSlider = document.getElementById('zoomSlider');
+        const zoomValue = document.getElementById('zoomValue');
+        
+        zoomSlider.addEventListener('input', (e) => {
+            zoomLevel = parseInt(e.target.value);
+            zoomValue.textContent = zoomLevel + 'x';
+            if (isPaused && pausedDataArray) {
+                drawAnalog(pausedDataArray, pausedDataArray.length);
+                drawDigital(pausedDataArray, pausedDataArray.length);
+            }
+        });
+
         async function startRecording() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 2048;
+                
+                microphone = audioContext.createMediaStreamSource(stream);
+                microphone.connect(analyser);
                 
                 mediaRecorder = new MediaRecorder(stream);
                 audioChunks = [];
@@ -405,6 +459,8 @@
                     document.getElementById('statusMessage').innerHTML = '✅ Recording saved! Click "Play Recording" to visualize it.';
                     
                     stream.getTracks().forEach(track => track.stop());
+                    microphone.disconnect();
+                    cancelAnimationFrame(animationId);
                 };
                 
                 mediaRecorder.start();
@@ -413,13 +469,30 @@
                 document.getElementById('recordBtn').disabled = true;
                 document.getElementById('stopBtn').disabled = false;
                 document.getElementById('recordBtn').classList.add('recording');
-                document.getElementById('statusMessage').innerHTML = '🔴 Recording... Speak now!';
+                document.getElementById('statusMessage').innerHTML = '🔴 Recording LIVE... Watch the waveforms update in real-time!';
                 document.getElementById('warning').style.display = 'none';
+                
+                // Start visualizing during recording
+                visualizeRecording();
                 
             } catch (err) {
                 console.error('Error accessing microphone:', err);
                 document.getElementById('warning').style.display = 'block';
             }
+        }
+
+        function visualizeRecording() {
+            if (!isRecording) return;
+            
+            animationId = requestAnimationFrame(visualizeRecording);
+            
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            analyser.getByteTimeDomainData(dataArray);
+            
+            drawAnalog(dataArray, bufferLength);
+            drawDigital(dataArray, bufferLength);
+            updateBinary(dataArray);
         }
 
         function stopRecording() {
@@ -440,18 +513,22 @@
                 audioContext.resume();
             }
             
+            // Create new analyser for playback
+            if (!analyser) {
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 2048;
+            }
+            
             audioSource = audioContext.createBufferSource();
             audioSource.buffer = recordedBuffer;
             audioSource.playbackRate.value = playbackSpeed;
-            
-            analyser = audioContext.createAnalyser();
-            analyser.fftSize = 2048;
             
             audioSource.connect(analyser);
             analyser.connect(audioContext.destination);
             
             audioSource.start(0);
             isPlaying = true;
+            isPaused = false;
             playbackPosition = 0;
             
             document.getElementById('playBtn').disabled = true;
@@ -465,7 +542,7 @@
                 document.getElementById('playBtn').disabled = false;
                 document.getElementById('pauseBtn').disabled = true;
                 document.getElementById('playBtn').classList.remove('playing');
-                document.getElementById('statusMessage').innerHTML = '⏹️ Playback finished. Click "Play Recording" to watch again!';
+                document.getElementById('statusMessage').innerHTML = '⏹️ Playback finished. Adjust zoom or play again!';
                 playbackPosition = 0;
                 updateIndicators();
             };
@@ -477,11 +554,12 @@
             if (audioSource) {
                 audioSource.stop();
                 isPlaying = false;
+                isPaused = true;
                 cancelAnimationFrame(animationId);
                 document.getElementById('playBtn').disabled = false;
                 document.getElementById('pauseBtn').disabled = true;
                 document.getElementById('playBtn').classList.remove('playing');
-                document.getElementById('statusMessage').innerHTML = '⏸️ Paused. Click "Play Recording" to restart.';
+                document.getElementById('statusMessage').innerHTML = '⏸️ PAUSED - Use zoom slider to examine the waveforms closely!';
             }
         }
 
@@ -493,6 +571,8 @@
             const bufferLength = analyser.frequencyBinCount;
             const dataArray = new Uint8Array(bufferLength);
             analyser.getByteTimeDomainData(dataArray);
+            
+            pausedDataArray = dataArray;
             
             playbackPosition += (1 / 60) * playbackSpeed;
             updateIndicators();
@@ -534,6 +614,11 @@
             analogCtx.lineTo(width, height / 2);
             analogCtx.stroke();
             
+            // Calculate visible samples based on zoom
+            const samplesPerView = Math.floor(bufferLength / zoomLevel);
+            const startIndex = 0;
+            const endIndex = Math.min(startIndex + samplesPerView, bufferLength);
+            
             // Smooth analog waveform
             analogCtx.lineWidth = 4;
             analogCtx.strokeStyle = '#0f0';
@@ -541,15 +626,15 @@
             analogCtx.shadowColor = '#0f0';
             analogCtx.beginPath();
             
-            const sliceWidth = width / bufferLength;
+            const sliceWidth = width / samplesPerView;
             let x = 0;
             const amplification = 4.0;
             
-            for (let i = 0; i < bufferLength; i++) {
+            for (let i = startIndex; i < endIndex; i++) {
                 const v = (dataArray[i] - 128) / 128.0;
                 const y = height / 2 - (v * height / 2 * amplification);
                 
-                if (i === 0) {
+                if (i === startIndex) {
                     analogCtx.moveTo(x, y);
                 } else {
                     analogCtx.lineTo(x, y);
@@ -562,9 +647,9 @@
             analogCtx.shadowBlur = 0;
             
             // Label
-            analogCtx.font = 'bold 20px Arial';
-            analogCtx.fillStyle = 'rgba(0, 255, 0, 0.7)';
-            analogCtx.fillText('SMOOTH CURVE', width / 2 - 70, 30);
+            analogCtx.font = 'bold 24px Arial';
+            analogCtx.fillStyle = 'rgba(0, 255, 0, 0.8)';
+            analogCtx.fillText('SMOOTH CURVES', width / 2 - 90, 35);
         }
 
         function drawDigital(dataArray, bufferLength) {
@@ -574,81 +659,118 @@
             digitalCtx.fillStyle = '#000';
             digitalCtx.fillRect(0, 0, width, height);
             
-            // HIGH zone (green)
-            digitalCtx.fillStyle = 'rgba(0, 255, 0, 0.1)';
-            digitalCtx.fillRect(0, 0, width, height / 2);
+            // HIGH zone (green) - top half
+            digitalCtx.fillStyle = 'rgba(0, 255, 0, 0.15)';
+            digitalCtx.fillRect(0, 0, width, height / 2 - 20);
             
-            // LOW zone (red)
-            digitalCtx.fillStyle = 'rgba(255, 0, 0, 0.1)';
-            digitalCtx.fillRect(0, height / 2, width, height / 2);
+            // LOW zone (red) - bottom section
+            digitalCtx.fillStyle = 'rgba(255, 0, 0, 0.15)';
+            digitalCtx.fillRect(0, height / 2 + 20, width, height / 2 - 20);
             
-            // Center threshold line
-            digitalCtx.strokeStyle = '#fff';
-            digitalCtx.lineWidth = 3;
-            digitalCtx.setLineDash([10, 5]);
+            // +5V line (HIGH)
+            digitalCtx.strokeStyle = '#0f0';
+            digitalCtx.lineWidth = 2;
+            digitalCtx.setLineDash([5, 5]);
             digitalCtx.beginPath();
-            digitalCtx.moveTo(0, height / 2);
-            digitalCtx.lineTo(width, height / 2);
+            digitalCtx.moveTo(0, height * 0.25);
+            digitalCtx.lineTo(width, height * 0.25);
             digitalCtx.stroke();
             digitalCtx.setLineDash([]);
             
-            // Labels
-            digitalCtx.font = 'bold 24px Arial';
-            digitalCtx.fillStyle = 'rgba(0, 255, 0, 0.8)';
-            digitalCtx.fillText('HIGH = 1', 20, 40);
-            digitalCtx.fillStyle = 'rgba(255, 0, 0, 0.8)';
-            digitalCtx.fillText('LOW = 0', 20, height - 20);
+            // 0V line (LOW)
+            digitalCtx.strokeStyle = '#f00';
+            digitalCtx.lineWidth = 2;
+            digitalCtx.setLineDash([5, 5]);
+            digitalCtx.beginPath();
+            digitalCtx.moveTo(0, height * 0.75);
+            digitalCtx.lineTo(width, height * 0.75);
+            digitalCtx.stroke();
+            digitalCtx.setLineDash([]);
             
-            // Digital staircase waveform
-            const sliceWidth = width / bufferLength;
+            // Voltage labels
+            digitalCtx.font = 'bold 20px Arial';
+            digitalCtx.fillStyle = '#0f0';
+            digitalCtx.fillText('+5V (HIGH)', 10, height * 0.25 - 10);
+            digitalCtx.fillStyle = '#f00';
+            digitalCtx.fillText('0V (LOW)', 10, height * 0.75 + 25);
+            
+            // Calculate visible samples based on zoom
+            const samplesPerView = Math.floor(bufferLength / zoomLevel);
+            const startIndex = 0;
+            const endIndex = Math.min(startIndex + samplesPerView, bufferLength);
+            
+            // Create PERFECT SQUARE WAVE like the image
+            const samplesPerBit = Math.max(Math.floor(20 / zoomLevel), 2);
+            const sliceWidth = width / samplesPerView;
+            
+            digitalCtx.lineWidth = 4;
+            digitalCtx.strokeStyle = '#fff';
+            
             let x = 0;
-            const amplification = 4.0;
+            let prevBit = -1;
+            let prevY = height * 0.75;
             
-            digitalCtx.lineWidth = 5;
-            
-            for (let i = 0; i < bufferLength - 1; i++) {
-                const v = (dataArray[i] - 128) / 128.0;
-                const amplified = v * amplification;
-                const y = height / 2 - (amplified * height / 2);
+            for (let i = startIndex; i < endIndex; i += samplesPerBit) {
+                // Determine if HIGH (1) or LOW (0) based on threshold
+                const sample = dataArray[i];
+                const bit = sample >= 128 ? 1 : 0;
                 
-                const nextV = (dataArray[i + 1] - 128) / 128.0;
-                const nextAmplified = nextV * amplification;
-                const nextY = height / 2 - (nextAmplified * height / 2);
+                // Set Y position: HIGH = top quarter, LOW = bottom quarter
+                const y = bit === 1 ? height * 0.25 : height * 0.75;
                 
-                // Color based on position
-                if (y < height / 2) {
-                    digitalCtx.strokeStyle = '#0f0';
-                } else {
-                    digitalCtx.strokeStyle = '#f00';
+                const currentX = (i - startIndex) * sliceWidth;
+                const nextX = Math.min(currentX + (samplesPerBit * sliceWidth), width);
+                
+                // Color based on bit value
+                digitalCtx.strokeStyle = bit === 1 ? '#0f0' : '#f00';
+                digitalCtx.fillStyle = bit === 1 ? '#0f0' : '#f00';
+                
+                // Draw VERTICAL edge (state change)
+                if (prevBit !== -1 && prevY !== y) {
+                    digitalCtx.beginPath();
+                    digitalCtx.moveTo(currentX, prevY);
+                    digitalCtx.lineTo(currentX, y);
+                    digitalCtx.stroke();
                 }
                 
+                // Draw HORIZONTAL line (holding the voltage level)
                 digitalCtx.beginPath();
-                digitalCtx.moveTo(x, y);
-                digitalCtx.lineTo(x + sliceWidth, nextY);
+                digitalCtx.moveTo(currentX, y);
+                digitalCtx.lineTo(nextX, y);
                 digitalCtx.stroke();
                 
-                x += sliceWidth;
-            }
-            
-            // Draw 1s and 0s
-            digitalCtx.font = 'bold 18px Arial';
-            x = 0;
-            const sampleStep = 40;
-            for (let i = 0; i < bufferLength; i += sampleStep) {
-                const v = (dataArray[i] - 128) / 128.0;
-                const amplified = v * amplification;
-                const y = height / 2 - (amplified * height / 2);
-                
-                if (y < height / 2) {
-                    digitalCtx.fillStyle = '#0f0';
-                    digitalCtx.fillText('1', x, y - 15);
-                } else {
-                    digitalCtx.fillStyle = '#f00';
-                    digitalCtx.fillText('0', x, y + 30);
+                // Draw bit label (1 or 0) above/below the line
+                if (zoomLevel >= 2 && (i - startIndex) % (samplesPerBit * 2) === 0) {
+                    digitalCtx.font = 'bold 24px Arial';
+                    if (bit === 1) {
+                        digitalCtx.fillText('1', currentX + 10, y - 15);
+                    } else {
+                        digitalCtx.fillText('0', currentX + 10, y + 30);
+                    }
                 }
                 
-                x += sliceWidth * sampleStep;
+                prevBit = bit;
+                prevY = y;
             }
+            
+            // Title
+            digitalCtx.font = 'bold 24px Arial';
+            digitalCtx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            digitalCtx.fillText('DIGITAL SQUARE WAVE (BINARY)', width / 2 - 180, 35);
+            
+            // Voltage axis label
+            digitalCtx.save();
+            digitalCtx.translate(20, height / 2);
+            digitalCtx.rotate(-Math.PI / 2);
+            digitalCtx.font = 'bold 18px Arial';
+            digitalCtx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            digitalCtx.fillText('Voltage', -40, 0);
+            digitalCtx.restore();
+            
+            // Time axis label
+            digitalCtx.font = 'bold 18px Arial';
+            digitalCtx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            digitalCtx.fillText('Time →', width - 80, height - 15);
         }
 
         function updateBinary(dataArray) {
