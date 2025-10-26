@@ -109,65 +109,48 @@
             color: #666;
             margin-bottom: 15px;
             line-height: 1.6;
+            font-size: 1.1em;
         }
 
         canvas {
             width: 100%;
-            height: 200px;
+            height: 250px;
             background: #000;
             border-radius: 10px;
             display: block;
         }
 
-        .info-box {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 15px;
-            margin: 20px 0;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+            font-size: 1.1em;
         }
 
-        .info-box h3 {
-            margin-bottom: 10px;
-            font-size: 1.3em;
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-
-        .stat-item {
-            background: rgba(255,255,255,0.1);
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-        }
-
-        .stat-label {
-            font-size: 0.9em;
-            opacity: 0.8;
-            margin-bottom: 5px;
-        }
-
-        .stat-value {
-            font-size: 1.5em;
-            font-weight: bold;
+        .legend-color {
+            width: 40px;
+            height: 20px;
+            border-radius: 5px;
         }
 
         .binary-display {
             background: #000;
             color: #0f0;
-            padding: 20px;
+            padding: 25px;
             border-radius: 10px;
             font-family: 'Courier New', monospace;
-            font-size: 14px;
-            max-height: 200px;
+            font-size: 16px;
+            max-height: 250px;
             overflow-y: auto;
-            line-height: 1.8;
+            line-height: 2;
             word-break: break-all;
         }
 
@@ -185,42 +168,22 @@
             border-radius: 5px;
         }
 
-        .conversion-steps {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin: 20px 0;
-        }
-
-        .step-card {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-            transition: transform 0.3s;
-        }
-
-        .step-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .step-number {
-            background: #667eea;
+        .warning {
+            background: #ff6b6b;
             color: white;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5em;
-            font-weight: bold;
-            margin: 0 auto 15px;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+            display: none;
         }
 
-        .step-card h4 {
-            color: #1e3c72;
-            margin-bottom: 10px;
+        .arrow-down {
+            text-align: center;
+            font-size: 3em;
+            color: white;
+            margin: 20px 0;
+            animation: bounce 2s infinite;
         }
 
         @keyframes fadeIn {
@@ -233,48 +196,23 @@
             50% { transform: scale(1.05); }
         }
 
-        .legend {
-            display: flex;
-            justify-content: center;
-            gap: 30px;
-            margin: 15px 0;
-            flex-wrap: wrap;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .legend-color {
-            width: 30px;
-            height: 15px;
-            border-radius: 3px;
-        }
-
-        .warning {
-            background: #ff6b6b;
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
-            text-align: center;
-            display: none;
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
 
         @media (max-width: 768px) {
             h1 { font-size: 1.8em; }
             .btn { padding: 12px 25px; font-size: 16px; }
-            canvas { height: 150px; }
+            canvas { height: 180px; }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🎙️ Analog to Digital Signal Converter</h1>
-            <p class="subtitle">Watch how sound is converted from analog waves to digital binary data in real-time!</p>
+            <h1>🎙️ Analog to Digital Conversion</h1>
+            <p class="subtitle">See how sound transforms from waves to computer data!</p>
         </header>
 
         <div class="controls">
@@ -284,120 +222,89 @@
             <button class="btn" id="stopBtn" onclick="stopRecording()" disabled>
                 <span>⏹️</span> Stop Recording
             </button>
-            <button class="btn" id="playBtn" onclick="playRecording()" disabled>
-                <span>▶️</span> Play Recording
-            </button>
         </div>
 
         <div class="warning" id="warning">
-            ⚠️ Microphone access denied. Please allow microphone access to use this demo.
-        </div>
-
-        <div class="info-box">
-            <h3>📊 Real-Time Statistics</h3>
-            <div class="stats">
-                <div class="stat-item">
-                    <div class="stat-label">Sample Rate</div>
-                    <div class="stat-value" id="sampleRate">44,100 Hz</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Bit Depth</div>
-                    <div class="stat-value">16-bit</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Recording Time</div>
-                    <div class="stat-value" id="recordTime">0.0s</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Data Size</div>
-                    <div class="stat-value" id="dataSize">0 KB</div>
-                </div>
-            </div>
+            ⚠️ Please allow microphone access to see the demo!
         </div>
 
         <div class="visualization-grid">
             <div class="viz-panel">
-                <h2>🌊 Step 1: Analog Signal (Continuous Wave)</h2>
-                <p><strong>What you see:</strong> This is the raw, continuous sound wave captured by your microphone. Analog signals are smooth, continuous curves that can have infinite values at any point in time.</p>
+                <h2>🌊 ANALOG SIGNAL</h2>
+                <p><strong>This is what sound actually looks like!</strong> A smooth, continuous wave that can be any value at any time. This is how sound travels through the air naturally.</p>
                 <div class="legend">
                     <div class="legend-item">
                         <div class="legend-color" style="background: #00ff00;"></div>
-                        <span>Analog Waveform</span>
+                        <span><strong>Smooth, Continuous Wave</strong></span>
                     </div>
                 </div>
                 <canvas id="analogCanvas"></canvas>
             </div>
 
+            <div class="arrow-down">⬇️</div>
+
             <div class="viz-panel">
-                <h2>📊 Step 2: Sampling (Measuring at Intervals)</h2>
-                <p><strong>What's happening:</strong> The computer measures the analog signal at regular intervals (44,100 times per second). Each measurement captures the amplitude (height) of the wave at that exact moment.</p>
+                <h2>📊 SAMPLING</h2>
+                <p><strong>The computer takes snapshots!</strong> It measures the wave height thousands of times per second. Each red dot is a measurement. The more dots, the more accurate the digital copy.</p>
                 <div class="legend">
                     <div class="legend-item">
                         <div class="legend-color" style="background: #00ff00;"></div>
-                        <span>Analog Wave</span>
+                        <span>Original Wave</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-color" style="background: #ff0000;"></div>
-                        <span>Sample Points</span>
+                        <span><strong>Sample Points (Measurements)</strong></span>
                     </div>
                 </div>
                 <canvas id="samplingCanvas"></canvas>
             </div>
 
+            <div class="arrow-down">⬇️</div>
+
             <div class="viz-panel">
-                <h2>🔲 Step 3: Quantization (Converting to Steps)</h2>
-                <p><strong>What's happening:</strong> Each sampled value is rounded to the nearest level (out of 65,536 possible levels for 16-bit audio). This creates a "staircase" effect - the digital approximation of the analog wave.</p>
+                <h2>🔲 DIGITAL SIGNAL (HIGH = 1, LOW = 0)</h2>
+                <p><strong>The smooth wave becomes steps!</strong> When the signal is HIGH (above center) = <span style="color: #0f0; font-weight: bold; font-size: 1.2em;">1</span>, when it's LOW (below center) = <span style="color: #f00; font-weight: bold; font-size: 1.2em;">0</span>. This is how computers understand sound - as patterns of 1s and 0s!</p>
                 <div class="legend">
                     <div class="legend-item">
-                        <div class="legend-color" style="background: #ffff00;"></div>
-                        <span>Digital Steps</span>
+                        <div class="legend-color" style="background: #00ff00;"></div>
+                        <span><strong>HIGH = 1</strong></span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ff0000;"></div>
+                        <span><strong>LOW = 0</strong></span>
                     </div>
                 </div>
                 <canvas id="digitalCanvas"></canvas>
             </div>
 
+            <div class="arrow-down">⬇️</div>
+
             <div class="viz-panel">
-                <h2>💾 Step 4: Binary Encoding (Stored as 1s and 0s)</h2>
-                <p><strong>What's happening:</strong> Each quantized value is converted to binary (16 bits per sample). This is how the computer stores audio - as sequences of 1s and 0s. Below you can see the actual binary data!</p>
+                <h2>💾 BINARY CODE (1s and 0s)</h2>
+                <p><strong>How it's stored in the computer!</strong> Each step in the digital signal is converted to a number, and that number becomes a pattern of 1s and 0s. This is the actual data saved on your hard drive, sent over the internet, or played by Spotify!</p>
                 <div id="binaryDisplay" class="binary-display">
-                    <div style="color: #0ff; margin-bottom: 10px;">Waiting for audio input...</div>
-                    <div style="color: #888; font-size: 12px;">Binary data will appear here when recording</div>
+                    <div style="color: #0ff; margin-bottom: 10px;">🎤 Waiting for audio...</div>
+                    <div style="color: #888; font-size: 14px;">Start recording to see the 1s and 0s!</div>
                 </div>
             </div>
         </div>
 
-        <div class="viz-panel">
-            <h2>🔄 How Analog-to-Digital Conversion Works</h2>
-            <div class="conversion-steps">
-                <div class="step-card">
-                    <div class="step-number">1</div>
-                    <h4>Sound Waves</h4>
-                    <p>Your voice creates continuous pressure waves in the air that hit the microphone</p>
+        <div class="viz-panel" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <h2 style="color: white;">📚 Key Differences</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+                <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px;">
+                    <h3 style="margin-bottom: 10px;">🌊 ANALOG</h3>
+                    <p>✓ Smooth and continuous</p>
+                    <p>✓ Infinite possible values</p>
+                    <p>✓ How sound exists naturally</p>
+                    <p>✓ Used by: Microphones, speakers, old cassette tapes</p>
                 </div>
-                <div class="step-card">
-                    <div class="step-number">2</div>
-                    <h4>Microphone</h4>
-                    <p>Converts sound pressure into continuous electrical voltage (analog signal)</p>
-                </div>
-                <div class="step-card">
-                    <div class="step-number">3</div>
-                    <h4>Sampling</h4>
-                    <p>Measures the voltage 44,100 times per second to capture snapshots</p>
-                </div>
-                <div class="step-card">
-                    <div class="step-number">4</div>
-                    <h4>Quantization</h4>
-                    <p>Rounds each measurement to one of 65,536 levels (16-bit resolution)</p>
-                </div>
-                <div class="step-card">
-                    <div class="step-number">5</div>
-                    <h4>Binary Encoding</h4>
-                    <p>Converts each level to a 16-bit binary number (0s and 1s)</p>
-                </div>
-                <div class="step-card">
-                    <div class="step-number">6</div>
-                    <h4>Storage</h4>
-                    <p>Saves the binary data to memory, hard drive, or sends over internet</p>
+                <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px;">
+                    <h3 style="margin-bottom: 10px;">🔲 DIGITAL</h3>
+                    <p>✓ Made of steps/levels</p>
+                    <p>✓ Limited specific values</p>
+                    <p>✓ Stored as 1s and 0s</p>
+                    <p>✓ Used by: Computers, phones, MP3s, streaming</p>
                 </div>
             </div>
         </div>
@@ -409,12 +316,7 @@
         let microphone;
         let dataArray;
         let bufferLength;
-        let mediaRecorder;
-        let audioChunks = [];
         let animationId;
-        let recordingStartTime;
-        let recordingInterval;
-        let recordedBlob;
 
         const analogCanvas = document.getElementById('analogCanvas');
         const samplingCanvas = document.getElementById('samplingCanvas');
@@ -428,7 +330,7 @@
         function setupCanvas() {
             [analogCanvas, samplingCanvas, digitalCanvas].forEach(canvas => {
                 canvas.width = canvas.offsetWidth;
-                canvas.height = 200;
+                canvas.height = 250;
             });
         }
 
@@ -449,29 +351,6 @@
                 
                 microphone.connect(analyser);
                 
-                mediaRecorder = new MediaRecorder(stream);
-                audioChunks = [];
-                
-                mediaRecorder.ondataavailable = (event) => {
-                    audioChunks.push(event.data);
-                };
-                
-                mediaRecorder.onstop = () => {
-                    recordedBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                    document.getElementById('playBtn').disabled = false;
-                };
-                
-                mediaRecorder.start();
-                recordingStartTime = Date.now();
-                
-                recordingInterval = setInterval(() => {
-                    const elapsed = (Date.now() - recordingStartTime) / 1000;
-                    document.getElementById('recordTime').textContent = elapsed.toFixed(1) + 's';
-                    
-                    const estimatedSize = (elapsed * 44100 * 2) / 1024;
-                    document.getElementById('dataSize').textContent = estimatedSize.toFixed(1) + ' KB';
-                }, 100);
-                
                 document.getElementById('startBtn').disabled = true;
                 document.getElementById('stopBtn').disabled = false;
                 document.getElementById('startBtn').classList.add('recording');
@@ -486,10 +365,6 @@
         }
 
         function stopRecording() {
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop();
-            }
-            
             if (microphone) {
                 microphone.disconnect();
             }
@@ -502,21 +377,9 @@
                 cancelAnimationFrame(animationId);
             }
             
-            if (recordingInterval) {
-                clearInterval(recordingInterval);
-            }
-            
             document.getElementById('startBtn').disabled = false;
             document.getElementById('stopBtn').disabled = true;
             document.getElementById('startBtn').classList.remove('recording');
-        }
-
-        function playRecording() {
-            if (recordedBlob) {
-                const audioUrl = URL.createObjectURL(recordedBlob);
-                const audio = new Audio(audioUrl);
-                audio.play();
-            }
         }
 
         function visualize() {
@@ -537,16 +400,37 @@
             analogCtx.fillStyle = '#000';
             analogCtx.fillRect(0, 0, width, height);
             
+            // Grid lines
+            analogCtx.strokeStyle = '#222';
+            analogCtx.lineWidth = 1;
+            for (let i = 0; i < 10; i++) {
+                const y = (i / 10) * height;
+                analogCtx.beginPath();
+                analogCtx.moveTo(0, y);
+                analogCtx.lineTo(width, y);
+                analogCtx.stroke();
+            }
+            
+            // Center line
+            analogCtx.strokeStyle = '#444';
             analogCtx.lineWidth = 2;
+            analogCtx.beginPath();
+            analogCtx.moveTo(0, height / 2);
+            analogCtx.lineTo(width, height / 2);
+            analogCtx.stroke();
+            
+            // Waveform with amplification
+            analogCtx.lineWidth = 3;
             analogCtx.strokeStyle = '#0f0';
             analogCtx.beginPath();
             
             const sliceWidth = width / bufferLength;
             let x = 0;
+            const amplification = 3.5; // Amplify sensitivity
             
             for (let i = 0; i < bufferLength; i++) {
-                const v = dataArray[i] / 128.0;
-                const y = v * height / 2;
+                const v = (dataArray[i] - 128) / 128.0;
+                const y = height / 2 - (v * height / 2 * amplification);
                 
                 if (i === 0) {
                     analogCtx.moveTo(x, y);
@@ -567,16 +451,38 @@
             samplingCtx.fillStyle = '#000';
             samplingCtx.fillRect(0, 0, width, height);
             
+            // Grid lines
+            samplingCtx.strokeStyle = '#222';
+            samplingCtx.lineWidth = 1;
+            for (let i = 0; i < 10; i++) {
+                const y = (i / 10) * height;
+                samplingCtx.beginPath();
+                samplingCtx.moveTo(0, y);
+                samplingCtx.lineTo(width, y);
+                samplingCtx.stroke();
+            }
+            
+            // Center line
+            samplingCtx.strokeStyle = '#444';
+            samplingCtx.lineWidth = 2;
+            samplingCtx.beginPath();
+            samplingCtx.moveTo(0, height / 2);
+            samplingCtx.lineTo(width, height / 2);
+            samplingCtx.stroke();
+            
+            // Analog waveform (faded) - amplified
             samplingCtx.lineWidth = 2;
             samplingCtx.strokeStyle = '#0f0';
+            samplingCtx.globalAlpha = 0.5;
             samplingCtx.beginPath();
             
             const sliceWidth = width / bufferLength;
             let x = 0;
+            const amplification = 3.5;
             
             for (let i = 0; i < bufferLength; i++) {
-                const v = dataArray[i] / 128.0;
-                const y = v * height / 2;
+                const v = (dataArray[i] - 128) / 128.0;
+                const y = height / 2 - (v * height / 2 * amplification);
                 
                 if (i === 0) {
                     samplingCtx.moveTo(x, y);
@@ -588,24 +494,34 @@
             }
             
             samplingCtx.stroke();
+            samplingCtx.globalAlpha = 1.0;
             
+            // Sample points
             x = 0;
-            const sampleStep = 8;
+            const sampleStep = 6;
             for (let i = 0; i < bufferLength; i += sampleStep) {
-                const v = dataArray[i] / 128.0;
-                const y = v * height / 2;
+                const v = (dataArray[i] - 128) / 128.0;
+                const y = height / 2 - (v * height / 2 * amplification);
                 
-                samplingCtx.fillStyle = '#f00';
-                samplingCtx.beginPath();
-                samplingCtx.arc(x, y, 3, 0, 2 * Math.PI);
-                samplingCtx.fill();
-                
-                samplingCtx.strokeStyle = '#f00';
-                samplingCtx.lineWidth = 1;
+                // Vertical line
+                samplingCtx.strokeStyle = 'rgba(255, 0, 0, 0.3)';
+                samplingCtx.lineWidth = 2;
                 samplingCtx.beginPath();
                 samplingCtx.moveTo(x, 0);
                 samplingCtx.lineTo(x, height);
                 samplingCtx.stroke();
+                
+                // Sample point - larger for visibility
+                samplingCtx.fillStyle = '#f00';
+                samplingCtx.beginPath();
+                samplingCtx.arc(x, y, 6, 0, 2 * Math.PI);
+                samplingCtx.fill();
+                
+                // Glow effect
+                samplingCtx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+                samplingCtx.beginPath();
+                samplingCtx.arc(x, y, 10, 0, 2 * Math.PI);
+                samplingCtx.fill();
                 
                 x += sliceWidth * sampleStep;
             }
@@ -618,65 +534,111 @@
             digitalCtx.fillStyle = '#000';
             digitalCtx.fillRect(0, 0, width, height);
             
-            digitalCtx.lineWidth = 2;
-            digitalCtx.strokeStyle = '#ff0';
-            digitalCtx.beginPath();
+            // Draw HIGH zone (green) - top half
+            digitalCtx.fillStyle = 'rgba(0, 255, 0, 0.1)';
+            digitalCtx.fillRect(0, 0, width, height / 2);
             
+            // Draw LOW zone (red) - bottom half
+            digitalCtx.fillStyle = 'rgba(255, 0, 0, 0.1)';
+            digitalCtx.fillRect(0, height / 2, width, height / 2);
+            
+            // Center line (threshold)
+            digitalCtx.strokeStyle = '#fff';
+            digitalCtx.lineWidth = 3;
+            digitalCtx.setLineDash([10, 5]);
+            digitalCtx.beginPath();
+            digitalCtx.moveTo(0, height / 2);
+            digitalCtx.lineTo(width, height / 2);
+            digitalCtx.stroke();
+            digitalCtx.setLineDash([]);
+            
+            // Labels for HIGH and LOW zones
+            digitalCtx.font = 'bold 24px Arial';
+            digitalCtx.fillStyle = 'rgba(0, 255, 0, 0.5)';
+            digitalCtx.fillText('HIGH = 1', 20, 40);
+            digitalCtx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+            digitalCtx.fillText('LOW = 0', 20, height - 20);
+            
+            // Digital waveform with color coding
             const sliceWidth = width / bufferLength;
             let x = 0;
+            const amplification = 3.5;
             
-            const quantizationLevels = 16;
+            digitalCtx.lineWidth = 5;
             
-            for (let i = 0; i < bufferLength; i++) {
-                const v = dataArray[i] / 128.0;
-                const quantized = Math.round(v * quantizationLevels) / quantizationLevels;
-                const y = quantized * height / 2;
+            for (let i = 0; i < bufferLength - 1; i++) {
+                const v = (dataArray[i] - 128) / 128.0;
+                const amplified = v * amplification;
+                const y = height / 2 - (amplified * height / 2);
                 
-                if (i === 0) {
-                    digitalCtx.moveTo(x, y);
+                const nextV = (dataArray[i + 1] - 128) / 128.0;
+                const nextAmplified = nextV * amplification;
+                const nextY = height / 2 - (nextAmplified * height / 2);
+                
+                // Color based on position relative to center
+                if (y < height / 2) {
+                    digitalCtx.strokeStyle = '#0f0'; // GREEN for HIGH (1)
                 } else {
-                    digitalCtx.lineTo(x, y);
+                    digitalCtx.strokeStyle = '#f00'; // RED for LOW (0)
                 }
+                
+                digitalCtx.beginPath();
+                digitalCtx.moveTo(x, y);
+                digitalCtx.lineTo(x + sliceWidth, nextY);
+                digitalCtx.stroke();
                 
                 x += sliceWidth;
             }
             
-            digitalCtx.stroke();
-            
-            digitalCtx.strokeStyle = '#444';
-            digitalCtx.lineWidth = 1;
-            for (let i = 0; i <= quantizationLevels; i++) {
-                const y = (i / quantizationLevels) * height;
-                digitalCtx.beginPath();
-                digitalCtx.moveTo(0, y);
-                digitalCtx.lineTo(width, y);
-                digitalCtx.stroke();
+            // Draw 1s and 0s at sample points
+            digitalCtx.font = 'bold 16px Arial';
+            x = 0;
+            const sampleStep = 30;
+            for (let i = 0; i < bufferLength; i += sampleStep) {
+                const v = (dataArray[i] - 128) / 128.0;
+                const amplified = v * amplification;
+                const y = height / 2 - (amplified * height / 2);
+                
+                if (y < height / 2) {
+                    digitalCtx.fillStyle = '#0f0';
+                    digitalCtx.fillText('1', x, y - 10);
+                } else {
+                    digitalCtx.fillStyle = '#f00';
+                    digitalCtx.fillText('0', x, y + 25);
+                }
+                
+                x += sliceWidth * sampleStep;
             }
         }
 
         function updateBinary() {
-            const samples = dataArray.slice(0, 32);
-            let binaryHTML = '<div style="color: #0ff; margin-bottom: 10px;">📊 Real-Time Binary Data (First 32 samples):</div>';
+            const samples = dataArray.slice(0, 60);
+            let binaryHTML = '<div style="color: #0ff; margin-bottom: 15px; font-size: 18px;">⚡ LIVE BINARY STREAM:</div>';
             
-            samples.forEach((sample, index) => {
-                const normalized = ((sample - 128) / 128) * 32768;
-                const intValue = Math.round(normalized);
-                const unsigned = intValue + 32768;
-                const binary = unsigned.toString(2).padStart(16, '0');
-                
-                const colored = binary.substring(0, 8) + '<span style="color: #ff0;">' + 
-                               binary.substring(8) + '</span>';
-                
-                if (index % 4 === 0) {
-                    binaryHTML += '<br>';
-                }
-                binaryHTML += '<span style="color: #0f0;">' + colored + '</span> ';
+            let binaryString = '';
+            samples.forEach((sample) => {
+                // Simple binary: above 128 = 1, below 128 = 0
+                const bit = sample >= 128 ? '1' : '0';
+                binaryString += bit;
             });
             
-            binaryHTML += '<br><br><div style="color: #888; font-size: 12px;">';
-            binaryHTML += '💡 Each sample = 16 bits (2 bytes)<br>';
-            binaryHTML += '📊 44,100 samples/second × 16 bits = 705,600 bits/second<br>';
-            binaryHTML += '💾 That\'s 88.2 KB per second of audio data!';
+            // Display in groups of 8 (bytes)
+            let displayHTML = '';
+            for (let i = 0; i < binaryString.length; i += 8) {
+                const byte = binaryString.substring(i, i + 8);
+                const color = byte.split('1').length - 1 > byte.split('0').length - 1 ? '#0f0' : '#f00';
+                displayHTML += `<span style="color: ${color}; font-size: 20px; font-weight: bold;">${byte}</span> `;
+                if ((i + 8) % 32 === 0) {
+                    displayHTML += '<br>';
+                }
+            }
+            
+            binaryHTML += displayHTML;
+            
+            binaryHTML += '<br><br><div style="color: #0ff; font-size: 14px; line-height: 1.8;">';
+            binaryHTML += '💡 <span style="color: #0f0;">GREEN</span> = More 1s (HIGH signal)<br>';
+            binaryHTML += '💡 <span style="color: #f00;">RED</span> = More 0s (LOW signal)<br>';
+            binaryHTML += '📊 This binary data is updating in REAL-TIME as you speak!';
             binaryHTML += '</div>';
             
             binaryDisplay.innerHTML = binaryHTML;
